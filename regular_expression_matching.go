@@ -3,59 +3,44 @@ package main
 import "fmt"
 
 func isMatch(s string, p string) bool {
-	for i := 0; i < len(p); i++ {
-		if isMatchByStart(s, p, i) {
-			return true
+	m, n := len(s), len(p)
+	// Create a DP table with (m+1) x (n+1) dimensions, initialized to false
+	dp := make([][]bool, m+1)
+	for i := range dp {
+		dp[i] = make([]bool, n+1)
+	}
+	// Base case: Empty string matches empty pattern
+	dp[0][0] = true
+
+	// Handle patterns with '*' that can match zero occurrences of the preceding element
+	for j := 2; j <= n; j++ {
+		if p[j-1] == '*' {
+			dp[0][j] = dp[0][j-2]
 		}
 	}
 
-	return false
-}
-
-func isMatchByStart(s string, p string, start int) bool {
-	j := start
-
-	if j == len(p)-1 {
-		return false
-	}
-
-	if p[j] == '*' {
-		return false
-	}
-
-	for i := 0; i < len(s); i++ {
-		if p[j] == '*' {
-			pre := p[j-1]
-
-			for i < len(s) && (s[i] == pre || pre == '.') {
-				i++
+	// Fill the DP table
+	for i := 1; i <= m; i++ {
+		for j := 1; j <= n; j++ {
+			if p[j-1] == s[i-1] || p[j-1] == '.' {
+				// If characters match or pattern has '.', take diagonal value
+				dp[i][j] = dp[i-1][j-1]
+			} else if p[j-1] == '*' {
+				// '*' can either eliminate the preceding element or allow multiple occurrences
+				dp[i][j] = dp[i][j-2] // Zero occurrences
+				if p[j-2] == s[i-1] || p[j-2] == '.' {
+					// If preceding character matches, '*' can match multiple times
+					dp[i][j] = dp[i][j] || dp[i-1][j]
+				}
 			}
-
-			if i == len(s) {
-				return true
-			} else {
-				i--
-			}
-		} else if p[j] != '.' && s[i] != p[j] {
-			return false
 		}
-
-		if i == len(s)-1 {
-			return true
-		} else if j == len(p)-1 {
-			return false
-		}
-
-		j++
 	}
 
-	return true
+	// Final result indicating if s matches p
+	return dp[m][n]
 }
 
 func main() {
-	//fmt.Println(isMatch("hello", "hello"))
-	//fmt.Println(isMatch("hello", ".ello"))
-	//fmt.Println(isMatch("hello", "hhello"))
-	fmt.Println(isMatch("ab", ".*c"))
-	//fmt.Println(isMatch("aa", "a*"))
+	//fmt.Println(isMatch("abcd", "d*"))
+	fmt.Println(isMatch("cabbbbcbcacbabc", ".*b.*.ab*.*b*a*c"))
 }
